@@ -6,6 +6,8 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import com.v2ray.ang.AppConfig.DEFAULT_PORT
 import com.v2ray.ang.AppConfig.REALITY
+import com.v2ray.ang.AppConfig.SNI_SPOOF_DEFAULT_INJECTOR
+import com.v2ray.ang.AppConfig.SNI_SPOOF_DEFAULT_UTLS
 import com.v2ray.ang.AppConfig.WIREGUARD_LOCAL_ADDRESS_V4
 import com.v2ray.ang.AppConfig.WIREGUARD_LOCAL_MTU
 import com.v2ray.ang.AppConfig.WIREGUARD_LOCAL_REMOTE_DNS
@@ -13,6 +15,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.enums.NetworkType
 import com.v2ray.ang.extension.nullIfBlank
+import com.v2ray.ang.snispoof.SniSpoofManager
 import com.v2ray.ang.util.JsonUtil
 
 class ServerUiState(
@@ -63,7 +66,12 @@ class ServerUiState(
     echConfigList: String = "",
     verifyPeerCertByName: String = "",
     pinnedCA256: String = "",
-    isFetchingCert: Boolean = false
+    isFetchingCert: Boolean = false,
+    sniSpoofEnabled: Boolean = false,
+    sniSpoofFakeSni: String = "",
+    sniSpoofUtls: String = SNI_SPOOF_DEFAULT_UTLS,
+    sniSpoofInjector: String = SNI_SPOOF_DEFAULT_INJECTOR,
+    sniSpoofConnect: String = ""
 ) {
     var configType by mutableStateOf(configType)
     var remarks by mutableStateOf(remarks)
@@ -113,11 +121,18 @@ class ServerUiState(
     var verifyPeerCertByName by mutableStateOf(verifyPeerCertByName)
     var pinnedCA256 by mutableStateOf(pinnedCA256)
     var isFetchingCert by mutableStateOf(isFetchingCert)
+    var sniSpoofEnabled by mutableStateOf(sniSpoofEnabled)
+    var sniSpoofFakeSni by mutableStateOf(sniSpoofFakeSni)
+    var sniSpoofUtls by mutableStateOf(sniSpoofUtls)
+    var sniSpoofInjector by mutableStateOf(sniSpoofInjector)
+    var sniSpoofConnect by mutableStateOf(sniSpoofConnect)
 
     var isRemarksError by mutableStateOf(false)
     var isAddressError by mutableStateOf(false)
     var isPortError by mutableStateOf(false)
     var isPasswordError by mutableStateOf(false)
+    var isSniSpoofFakeSniError by mutableStateOf(false)
+    var isSniSpoofConnectError by mutableStateOf(false)
 
     fun toProfileItem(initialConfig: ProfileItem): ProfileItem {
         val isVmess = configType == EConfigType.VMESS
@@ -184,7 +199,12 @@ class ServerUiState(
             mldsa65Verify = mldsa65Verify,
             echConfigList = echConfigList,
             verifyPeerCertByName = verifyPeerCertByName,
-            pinnedCA256 = pinnedCA256
+            pinnedCA256 = pinnedCA256,
+            sniSpoofEnabled = if (sniSpoofEnabled && SniSpoofManager.isSupportedType(configType)) true else null,
+            sniSpoofFakeSni = sniSpoofFakeSni.nullIfBlank(),
+            sniSpoofUtls = sniSpoofUtls.takeUnless { it.isBlank() || it == SNI_SPOOF_DEFAULT_UTLS },
+            sniSpoofInjector = sniSpoofInjector.takeUnless { it.isBlank() || it == SNI_SPOOF_DEFAULT_INJECTOR },
+            sniSpoofConnect = sniSpoofConnect.nullIfBlank()
         )
     }
 
@@ -239,7 +259,12 @@ class ServerUiState(
                 mldsa65Verify = initialConfig.mldsa65Verify ?: "",
                 echConfigList = initialConfig.echConfigList ?: "",
                 verifyPeerCertByName = initialConfig.verifyPeerCertByName ?: "",
-                pinnedCA256 = initialConfig.pinnedCA256 ?: ""
+                pinnedCA256 = initialConfig.pinnedCA256 ?: "",
+                sniSpoofEnabled = initialConfig.sniSpoofEnabled == true,
+                sniSpoofFakeSni = initialConfig.sniSpoofFakeSni ?: "",
+                sniSpoofUtls = initialConfig.sniSpoofUtls ?: SNI_SPOOF_DEFAULT_UTLS,
+                sniSpoofInjector = initialConfig.sniSpoofInjector ?: SNI_SPOOF_DEFAULT_INJECTOR,
+                sniSpoofConnect = initialConfig.sniSpoofConnect ?: ""
             )
 
         fun from(

@@ -38,6 +38,7 @@ class ServerTrojanActivity : BaseServerActivity() {
                 scope = scope,
                 buildProfileItem = { uiState.toProfileItem(initialConfig) }
             )
+            CommonSniSpoofingFields(uiState)
         }
     }
 

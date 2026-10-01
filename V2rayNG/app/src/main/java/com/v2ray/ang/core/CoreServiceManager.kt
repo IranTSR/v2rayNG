@@ -28,6 +28,7 @@ import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.service.DialerNativeService
 import com.v2ray.ang.service.DialerWebviewService
 import com.v2ray.ang.service.NetworkMonitor
+import com.v2ray.ang.snispoof.SniSpoofManager
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +113,13 @@ object CoreServiceManager {
         }
     }
 
+    /**
+     * A start or reload failure whose message is a localized resource string, meant for the main
+     * screen. Every other failure reaches the UI without a reason: its message is technical and
+     * belongs in the log, and the UI shows only resource text.
+     */
+    private class StartFailure(message: String) : RuntimeException(message)
+
     @Throws(Exception::class)
     private fun doStartCoreLoop(service: Service, vpnInterface: ParcelFileDescriptor?) {
         val mFilter = IntentFilter(AppConfig.BROADCAST_ACTION_SERVICE)
@@ -121,7 +129,13 @@ object CoreServiceManager {
         ContextCompat.registerReceiver(service, mMsgReceive, mFilter, Utils.receiverFlags())
 
         currentVpnInterface = vpnInterface
-        launchCore(service, vpnInterface)
+        try {
+            launchCore(service, vpnInterface)
+        } catch (e: Exception) {
+            // A failed start must not leave the SNI-spoof sidecar running without a core.
+            SniSpoofManager.stop()
+            throw e
+        }
         startNetworkMonitor(service)
     }
 
@@ -131,6 +145,19 @@ object CoreServiceManager {
         val config = MmkvManager.decodeServerConfig(guid) ?: error("Failed to decode server config")
 
         LogUtil.i(AppConfig.TAG, "StartCore-Manager: Starting core loop for ${config.remarks}")
+        // SNI-Spoofing-Go sidecar: the config built below dials its loopback port, so the
+        // sidecar must be listening first (ordering). The blocking root/file/network work runs
+        // here with explicit timeouts (5s listen poll inside startForRun); service/AGENTS.md.
+        // A StartFailure carries the user-facing reason to the UI.
+        if (SniSpoofManager.isEnabledFor(config)) {
+            try {
+                SniSpoofManager.startForRun(service, config)
+            } catch (e: SniSpoofManager.SniSpoofException) {
+                throw StartFailure(e.message.orEmpty())
+            }
+        } else {
+            SniSpoofManager.stop()
+        }
         val result = CoreConfigManager.getV2rayConfig(service, guid)
         LogUtil.d(AppConfig.TAG, result.content)
         if (!result.status) {
@@ -216,6 +243,7 @@ object CoreServiceManager {
 
         MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_STOP_SUCCESS, "")
         NotificationManager.cancelNotification()
+        SniSpoofManager.stop()
 
         try {
             service.unregisterReceiver(mMsgReceive)

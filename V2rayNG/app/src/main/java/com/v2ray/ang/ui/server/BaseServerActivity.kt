@@ -39,6 +39,7 @@ import com.v2ray.ang.extension.toastSuccess
 import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.CertificateFingerprintManager
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.snispoof.SniSpoofManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
@@ -367,6 +368,65 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         }
     }
 
+    /** Curated uTLS presets for the sidecar's fake ClientHello; the field stays editable for the rest. */
+    private val sniSpoofUtlsOptions = listOf("chrome", "firefox", "safari", "edge", "randomized", "none")
+
+    /**
+     * SNI-Spoofing-Go sidecar section (root): routes this profile through the bundled fake
+     * ClientHello injector. Only shown for the TCP protocols the sidecar can front.
+     */
+    @Composable
+    protected fun CommonSniSpoofingFields(state: ServerUiState) {
+        if (!SniSpoofManager.isSupportedType(state.configType)) return
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SettingsSwitchItem(
+                title = stringResource(R.string.server_lab_sni_spoof_enable),
+                summary = stringResource(R.string.server_lab_sni_spoof_enable_summary),
+                checked = state.sniSpoofEnabled,
+                onCheckedChange = { state.sniSpoofEnabled = it }
+            )
+            if (state.sniSpoofEnabled) {
+                FormTextField(
+                    label = stringResource(R.string.server_lab_sni_spoof_connect),
+                    value = state.sniSpoofConnect,
+                    onValueChange = {
+                        state.sniSpoofConnect = it
+                        state.isSniSpoofConnectError = false
+                    },
+                    placeholder = stringResource(R.string.server_lab_sni_spoof_connect_hint),
+                    isError = state.isSniSpoofConnectError,
+                    supportingText = if (state.isSniSpoofConnectError)
+                        stringResource(R.string.server_lab_sni_spoof_connect_invalid) else null,
+                )
+                FormTextField(
+                    label = stringResource(R.string.server_lab_sni_spoof_fake_sni),
+                    value = state.sniSpoofFakeSni,
+                    onValueChange = {
+                        state.sniSpoofFakeSni = it
+                        state.isSniSpoofFakeSniError = false
+                    },
+                    placeholder = stringResource(R.string.server_lab_sni_spoof_fake_sni_hint),
+                    isError = state.isSniSpoofFakeSniError,
+                    supportingText = if (state.isSniSpoofFakeSniError)
+                        stringResource(R.string.server_lab_sni_spoof_fake_sni_required) else null,
+                )
+                FormDropdownField(
+                    label = stringResource(R.string.server_lab_sni_spoof_utls),
+                    value = state.sniSpoofUtls,
+                    options = sniSpoofUtlsOptions,
+                    onValueChange = { state.sniSpoofUtls = it },
+                    editable = true,
+                )
+                FormDropdownField(
+                    label = stringResource(R.string.server_lab_sni_spoof_injector),
+                    value = state.sniSpoofInjector,
+                    options = listOf("active", "passive"),
+                    onValueChange = { state.sniSpoofInjector = it },
+                )
+            }
+        }
+    }
+
     protected fun validateBasicConfig(state: ServerUiState): Boolean {
         val remarksErr = state.remarks.isBlank()
         val addressErr = state.address.isBlank()
@@ -413,6 +473,27 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         }
         if (!config.finalMask.isNullOrBlank() && JsonUtil.parseString(config.finalMask) == null) {
             toast(R.string.server_lab_final_mask)
+            return false
+        }
+        // The sidecar's -connect upstream: the optional override wins, otherwise the
+        // profile's own server address. With an IP upstream a decoy hostname is
+        // mandatory, otherwise the sidecar has nothing to inject.
+        val spoofConnectTarget = SniSpoofManager.connectTarget(config)
+        if (config.sniSpoofEnabled == true &&
+            SniSpoofManager.isConnectTargetIp(spoofConnectTarget) &&
+            config.sniSpoofFakeSni.isNullOrBlank()
+        ) {
+            state.isSniSpoofFakeSniError = true
+            toast(R.string.server_lab_sni_spoof_fake_sni)
+            return false
+        }
+        // A non-blank override must be a valid host:port, e.g. 104.19.229.21:443.
+        if (config.sniSpoofEnabled == true &&
+            !config.sniSpoofConnect.isNullOrBlank() &&
+            !SniSpoofManager.isValidConnectTarget(config.sniSpoofConnect.orEmpty())
+        ) {
+            state.isSniSpoofConnectError = true
+            toast(R.string.server_lab_sni_spoof_connect)
             return false
         }
         return true

@@ -29,7 +29,7 @@ class ServerHttpActivity : BaseServerActivity() {
         ) {
             CommonBasicFields(uiState)
             HttpProtocolFields(uiState)
-
+            CommonSniSpoofingFields(uiState)
         }
     }
 

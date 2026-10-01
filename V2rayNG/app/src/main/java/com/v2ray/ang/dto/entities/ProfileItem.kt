@@ -74,6 +74,24 @@ data class ProfileItem(
     var proxyChainProfiles: String? = null,
 
     var browserDialerMode: String? = null,
+
+    /** SNI-Spoofing-Go sidecar enabled for this profile; null means disabled. Requires root. */
+    var sniSpoofEnabled: Boolean? = null,
+
+    /** Decoy SNI sent in the injected fake ClientHello; null or blank lets the sidecar decide. */
+    var sniSpoofFakeSni: String? = null,
+
+    /** uTLS fingerprint preset for the fake ClientHello; null means the default. */
+    var sniSpoofUtls: String? = null,
+
+    /** Injector backend ("active" or "passive"); null means the default. */
+    var sniSpoofInjector: String? = null,
+
+    /**
+     * Optional override for the sidecar's -connect upstream (IP:port or host:port).
+     * When null or blank, the sidecar connects to this profile's own server address and port.
+     */
+    var sniSpoofConnect: String? = null,
 ) {
 
     companion object {

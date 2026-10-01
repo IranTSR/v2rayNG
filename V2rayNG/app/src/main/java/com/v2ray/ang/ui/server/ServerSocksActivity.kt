@@ -29,7 +29,7 @@ class ServerSocksActivity : BaseServerActivity() {
         ) {
             CommonBasicFields(uiState)
             SocksProtocolFields(uiState)
-
+            CommonSniSpoofingFields(uiState)
         }
     }
 
