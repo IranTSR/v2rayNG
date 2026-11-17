@@ -41,6 +41,7 @@
     <string name="menu_item_import_config_manually_vless">Add [VLESS]</string>
     <string name="menu_item_import_config_manually_ss">Add [Shadowsocks]</string>
     <string name="menu_item_import_config_manually_socks">Add [SOCKS]</string>
+    <string name="menu_item_import_config_manually_sstp">Type manually[SSTP]</string>
     <string name="menu_item_import_config_manually_http">Add [HTTP]</string>
     <string name="menu_item_import_config_manually_trojan">Add [Trojan]</string>
     <string name="menu_item_import_config_manually_wireguard">Add [WireGuard]</string>
