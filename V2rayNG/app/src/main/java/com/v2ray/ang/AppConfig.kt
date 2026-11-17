@@ -175,7 +175,9 @@ object AppConfig {
     const val DEFAULT_VPN_BYPASS_LAN = "1"
     const val DEFAULT_HEV_TUNNEL_LOGLEVEL = "warn"
     const val DEFAULT_MUX_XUDP_CONCURRENCY = "8"
-
+    const val SSTP_SOCKS_BIN = "libsstpsocks.so"
+    const val SSTP_LOCAL_PORT = 10818
+    
     /** Message constants for communication. */
     const val MSG_REGISTER_CLIENT = 1
     const val MSG_STATE_RUNNING = 11
@@ -219,7 +221,8 @@ object AppConfig {
     const val HYSTERIA2 = "hysteria2://"
     const val HY2 = "hy2://"
     const val V2RAYNFMTS = "v2rayn://"
-
+    const val SSTP = "sstp://"
+    
     /** Give a good name to this, IDK*/
     const val VPN = "VPN"
     const val VPN_MTU = 1500
