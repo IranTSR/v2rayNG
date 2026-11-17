@@ -31,6 +31,7 @@ object CoreOutboundBuilder {
             EConfigType.TROJAN -> toOutboundTrojan(profileItem)
             EConfigType.WIREGUARD -> toOutboundWireguard(profileItem)
             EConfigType.HYSTERIA2 -> toOutboundHysteria2(profileItem)
+            EConfigType.SSTP -> toOutboundSstp(profileItem)
             EConfigType.HTTP -> toOutboundHttp(profileItem)
             else -> null
         }
@@ -706,5 +707,14 @@ object CoreOutboundBuilder {
                 LogUtil.w("V2rayConfigManager", "Invalid finalMask JSON, keeping previously generated finalmask")
             }
         }
-    }
+
+    private fun toOutboundSstp(profileItem: ProfileItem): OutboundBean? {
+        val outboundBean = createInitOutbound(EConfigType.SOCKS)
+        outboundBean?.settings?.let { settings ->
+            settings.address = AppConfig.LOOPBACK
+            settings.port = AppConfig.SSTP_LOCAL_PORT
+            settings.level = AppConfig.DEFAULT_LEVEL
+        }
+        return outboundBean
+        }
 }
