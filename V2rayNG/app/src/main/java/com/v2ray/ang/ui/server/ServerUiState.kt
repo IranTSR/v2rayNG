@@ -123,7 +123,7 @@ class ServerUiState(
         val isVmess = configType == EConfigType.VMESS
         val isVless = configType == EConfigType.VLESS
         val isShadowsocks = configType == EConfigType.SHADOWSOCKS
-        val isSocksOrHttp = configType == EConfigType.SOCKS || configType == EConfigType.HTTP
+        val isSocksOrHttp = configType == EConfigType.SOCKS || configType == EConfigType.HTTP || configType == EConfigType.SSTP
         val isWireguard = configType == EConfigType.WIREGUARD
         val isHysteria2 = configType == EConfigType.HYSTERIA2
 
