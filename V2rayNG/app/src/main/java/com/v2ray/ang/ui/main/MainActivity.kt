@@ -38,6 +38,7 @@ import com.v2ray.ang.ui.server.ServerHttpActivity
 import com.v2ray.ang.ui.server.ServerHysteria2Activity
 import com.v2ray.ang.ui.server.ServerProxyChainActivity
 import com.v2ray.ang.ui.server.ServerShadowsocksActivity
+import com.v2ray.ang.ui.server.ServerSstpActivity
 import com.v2ray.ang.ui.server.ServerSocksActivity
 import com.v2ray.ang.ui.server.ServerTrojanActivity
 import com.v2ray.ang.ui.server.ServerVlessActivity
@@ -201,6 +202,7 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.VLESS.value -> Intent(this, ServerVlessActivity::class.java)
             EConfigType.SHADOWSOCKS.value -> Intent(this, ServerShadowsocksActivity::class.java)
             EConfigType.SOCKS.value -> Intent(this, ServerSocksActivity::class.java)
+            EConfigType.SSTP.value -> Intent(this, ServerSstpActivity::class.java)
             EConfigType.HTTP.value -> Intent(this, ServerHttpActivity::class.java)
             EConfigType.TROJAN.value -> Intent(this, ServerTrojanActivity::class.java)
             EConfigType.WIREGUARD.value -> Intent(this, ServerWireguardActivity::class.java)
@@ -253,6 +255,7 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.VLESS -> ServerVlessActivity::class.java
             EConfigType.SHADOWSOCKS -> ServerShadowsocksActivity::class.java
             EConfigType.SOCKS -> ServerSocksActivity::class.java
+            EConfigType.SSTP -> ServerSstpActivity::class.java
             EConfigType.HTTP -> ServerHttpActivity::class.java
             EConfigType.TROJAN -> ServerTrojanActivity::class.java
             EConfigType.WIREGUARD -> ServerWireguardActivity::class.java
