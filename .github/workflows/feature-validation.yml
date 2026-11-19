@@ -1,0 +1,91 @@
+name: Feature branch validation
+
+on:
+  push:
+    branches:
+      - feature/sstp-support
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sstp-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-playstore-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Fetch upstream master and report branch divergence
+        shell: bash
+        run: |
+          git remote add upstream https://github.com/2dust/v2rayNG.git
+          git fetch upstream master
+          echo "Branch divergence (upstream-only, branch-only):"
+          git rev-list --left-right --count upstream/master...HEAD
+          echo "Agent instruction differences against upstream:"
+          git diff --name-status upstream/master...HEAD -- \
+            ':(glob)**/AGENTS.md' ':(glob)**/CLAUDE.md' \
+            ':(glob)**/GEMINI.md' .github/copilot-instructions.md
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-37 build-tools;37.0.0 platform-tools'
+
+      - name: Install Android NDK
+        shell: bash
+        run: |
+          sdkmanager --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+
+      - name: Build HEV native libraries
+        shell: bash
+        run: |
+          bash compile-hevtun.sh
+          mkdir -p V2rayNG/app/libs
+          cp -R libs/. V2rayNG/app/libs/
+
+      - name: Download libv2ray matching the checked-out submodule tag
+        uses: robinraju/release-downloader@v1.13
+        with:
+          repository: 2dust/AndroidLibXrayLite
+          tag: ${{ steps.xray-tag.outputs.tag }}
+          fileName: libv2ray.aar
+          out-file-path: V2rayNG/app/libs/
+
+      - name: Read AndroidLibXrayLite tag
+        id: xray-tag
+        shell: bash
+        run: |
+          cd AndroidLibXrayLite
+          echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Assemble Play Store debug APK
+        shell: bash
+        run: |
+          cd V2rayNG
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assemblePlaystoreDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayng-playstore-debug
+          path: V2rayNG/app/build/outputs/apk/playstore/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
