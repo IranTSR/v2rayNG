@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.4.21"
 }
 
 android {
@@ -15,13 +14,20 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDir("../../third_party/Open-SSTP-Client/app/src/main/java")
-            res.srcDir("../../third_party/Open-SSTP-Client/app/src/main/res")
+            java.exclude(
+                "kittoku/osc/SharedBridge.kt",
+                "kittoku/osc/control/**",
+                "kittoku/osc/terminal/**",
+                "kittoku/osc/service/**",
+                "kittoku/osc/activity/**",
+                "kittoku/osc/fragment/**",
+                "kittoku/osc/preference/**",
+                "kittoku/osc/extension/SharedPreferences.kt",
+                "kittoku/osc/extension/View.kt",
+                "kittoku/osc/debug/Capture.kt",
+                "kittoku/osc/client/ppp/IpcpClient.kt"
+            )
         }
-    }
-
-    buildFeatures {
-        buildConfig = true
-        viewBinding = true
     }
 
     compileOptions {
@@ -38,11 +44,6 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation("androidx.documentfile:documentfile:1.1.0")
-    implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.google.android.material:material:1.13.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 }
