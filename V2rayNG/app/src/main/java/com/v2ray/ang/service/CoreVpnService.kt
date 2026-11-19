@@ -37,8 +37,8 @@ class CoreVpnService : VpnService(), ServiceControl {
     private var isRunning = false
     private var tun2SocksService: Tun2SocksControl? = null
     private val isStartingLock = AtomicBoolean(false)
-    private var sstpEngine: SstpEngine? = null
-    private var isSstpStopping = false
+    @Volatile private var sstpEngine: SstpEngine? = null
+    @Volatile private var isSstpStopping = false
 
     override fun onCreate() {
         super.onCreate()
@@ -129,11 +129,11 @@ class CoreVpnService : VpnService(), ServiceControl {
         val host = profile.server?.trim().orEmpty()
         val port = profile.serverPort?.toIntOrNull() ?: 443
         if (host.isBlank() || port !in 1..65535 || profile.username.isNullOrBlank() || profile.password.isNullOrBlank()) {
-            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, "SSTP requires a valid host, port, username and password")
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, getString(R.string.toast_config_file_invalid))
             return false
         }
         if (prepare(this) != null) {
-            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, "VPN permission is not granted")
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, getString(R.string.toast_action_not_allowed))
             return false
         }
 
