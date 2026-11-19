@@ -13,7 +13,7 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDir(layout.buildDirectory.dir("generated/sstp/kotlin"))
+            java.srcDir("$buildDir/generated/sstp/kotlin")
         }
     }
 
