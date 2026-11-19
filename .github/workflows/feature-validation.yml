@@ -36,9 +36,10 @@ jobs:
             ':(glob)**/GEMINI.md' .github/copilot-instructions.md
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: 'platforms;android-37 build-tools;37.0.0 platform-tools'
+          cmdline-tools-version: '14742923'
+          packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
 
       - name: Install Android NDK
         shell: bash
