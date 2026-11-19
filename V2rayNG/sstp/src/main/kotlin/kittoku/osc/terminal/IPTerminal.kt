@@ -26,6 +26,11 @@ internal class IPTerminal(private val bridge: SharedBridge) {
             bridge.builder.addDnsServer(InetAddress.getByAddress(bridge.currentProposedDNS))
         }
         bridge.builder.addRoute("0.0.0.0", 0)
+        // Route IPv6 into the TUN and drop it in OutgoingManager until IPv6CP is negotiated.
+        // This prevents IPv6 traffic from bypassing the SSTP tunnel on dual-stack networks.
+        bridge.builder.addAddress(InetAddress.getByName("fd00::1"), 128)
+        bridge.builder.addRoute("::", 0)
+        bridge.builder.setSession("SSTP: ${bridge.hostname}")
         bridge.builder.setMtu(bridge.PPP_MTU)
         bridge.builder.setBlocking(true)
 
