@@ -44,8 +44,8 @@ internal class Controller(private val bridge: SharedBridge) {
 
     internal fun launchJobMain() {
         bridge.handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            cleanup()
             bridge.service.notifyFailure(throwable.message ?: throwable.javaClass.simpleName)
-            bridge.service.scope.launch { cleanup() }
         }
 
         jobMain = bridge.service.scope.launch(bridge.handler) {
@@ -154,7 +154,7 @@ internal class Controller(private val bridge: SharedBridge) {
             bridge.controlMailbox.receive()
         }
 
-        if (received.result == Result.PROCEEDED) return true
+        if (received.from == where && received.result == Result.PROCEEDED) return true
 
         val packetType = when (received.result) {
             Result.ERR_DISCONNECT_REQUESTED -> SSTP_MESSAGE_TYPE_CALL_DISCONNECT_ACK
