@@ -576,4 +576,6 @@
     <string name="sub_info_unlimited">بی‌حد</string>
 
     <string name="menu_item_import_config_manually_sstp">اس‌اس‌تی‌پی</string>
+    <string name="server_lab_username">نوم منتوری</string>
+    <string name="server_lab_password">رزم</string>
 </resources>
