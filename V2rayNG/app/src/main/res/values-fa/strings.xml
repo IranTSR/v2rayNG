@@ -575,4 +575,5 @@
     <string name="sub_info_open_page">باز کردن صفحه اطلاعات اشتراک</string>
     <string name="sub_info_unlimited">نامحدود</string>
 
+    <string name="menu_item_import_config_manually_sstp">SSTP</string>
 </resources>
