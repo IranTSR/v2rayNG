@@ -14,19 +14,19 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDir("../../third_party/Open-SSTP-Client/app/src/main/java")
-            java.exclude(
-                "kittoku/osc/SharedBridge.kt",
-                "kittoku/osc/control/**",
-                "kittoku/osc/terminal/**",
-                "kittoku/osc/service/**",
-                "kittoku/osc/activity/**",
-                "kittoku/osc/fragment/**",
-                "kittoku/osc/preference/**",
-                "kittoku/osc/extension/SharedPreferences.kt",
-                "kittoku/osc/extension/View.kt",
-                "kittoku/osc/debug/Capture.kt",
-                "kittoku/osc/client/ppp/IpcpClient.kt"
+            java.filter.include(
+                "kittoku/osc/client/**",
+                "kittoku/osc/cipher/**",
+                "kittoku/osc/io/**",
+                "kittoku/osc/unit/**",
+                "kittoku/osc/extension/Byte.kt",
+                "kittoku/osc/extension/ByteArray.kt",
+                "kittoku/osc/extension/ByteBuffer.kt",
+                "kittoku/osc/extension/Short.kt",
+                "kittoku/osc/extension/String.kt",
+                "kittoku/osc/configuration.kt"
             )
+            java.filter.exclude("kittoku/osc/client/ppp/IpcpClient.kt")
         }
     }
 
