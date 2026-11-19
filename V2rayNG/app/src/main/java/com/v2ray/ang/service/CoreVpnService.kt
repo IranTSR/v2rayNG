@@ -138,6 +138,7 @@ class CoreVpnService : VpnService(), ServiceControl {
         }
 
         isSstpStopping = false
+        CoreServiceManager.registerExternalServiceReceiver(this)
         sstpEngine = SstpEngine(
             vpnService = this,
             hostname = host,
