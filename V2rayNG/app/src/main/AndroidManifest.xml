@@ -367,6 +367,7 @@
                 android:resource="@xml/cache_paths" />
         </provider>
 
-    </application>
+            <activity android:name=".ui.server.ServerSstpActivity" android:exported="false" />
+</application>
 
 </manifest>
