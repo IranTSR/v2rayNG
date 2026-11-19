@@ -584,4 +584,6 @@
     <string name="sub_info_unlimited">غير محدود</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">اسم المستخدم</string>
+    <string name="server_lab_password">كلمة المرور</string>
 </resources>
