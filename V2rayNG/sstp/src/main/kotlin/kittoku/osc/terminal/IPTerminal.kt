@@ -50,14 +50,11 @@ internal class IPTerminal(private val bridge: SharedBridge) {
     }
 
     internal fun close() {
-        try {
-            inputStream?.close()
-        } finally {
-            outputStream?.close()
-            fd?.close()
-            inputStream = null
-            outputStream = null
-            fd = null
-        }
+        runCatching { inputStream?.close() }
+        runCatching { outputStream?.close() }
+        runCatching { fd?.close() }
+        inputStream = null
+        outputStream = null
+        fd = null
     }
 }
