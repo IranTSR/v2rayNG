@@ -136,6 +136,7 @@ class ServerUiState(
         val isVless = configType == EConfigType.VLESS
         val isShadowsocks = configType == EConfigType.SHADOWSOCKS
         val isSocksOrHttp = configType == EConfigType.SOCKS || configType == EConfigType.HTTP
+        val isSstp = configType == EConfigType.SSTP
         val isWireguard = configType == EConfigType.WIREGUARD
         val isMasque = configType == EConfigType.MASQUE
         val isHysteria2 = configType == EConfigType.HYSTERIA2
@@ -152,7 +153,7 @@ class ServerUiState(
                 else -> null
             },
             flow = if (isVless) flow else null,
-            username = if (isSocksOrHttp) username else null,
+            username = if (isSocksOrHttp || isSstp) username else null,
             secretKey = if (isWireguard || isMasque) secretKey else null,
             publicKey = when {
                 isWireguard || isMasque -> publicKey
