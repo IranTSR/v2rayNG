@@ -320,7 +320,7 @@ object CoreServiceManager {
      */
     fun queryAllOutboundTrafficStats(): List<OutboundTrafficStat> {
         // The stats manager is gone once the core stops, querying it then reaches into freed state.
-        if (!isRunning()) return emptyList()
+        if (!coreController.isRunning) return emptyList()
 
         val payload = coreController.queryAllOutboundTrafficStats()
 
@@ -353,7 +353,7 @@ object CoreServiceManager {
      */
     private fun measureV2rayDelay(requestId: String) {
         val service = getService() ?: return
-        if (!isRunning() || isReloading) {
+        if (!coreController.isRunning || isReloading) {
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_CANCEL, "", requestId)
             return
         }
@@ -387,7 +387,7 @@ object CoreServiceManager {
                 ipAddress = null,
             )
             withContext(Dispatchers.Main.immediate) {
-                if (isRunning()) {
+                if (coreController.isRunning) {
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_RESULT, initialResult, requestId)
                 } else {
                     MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_CANCEL, "", requestId)
@@ -406,7 +406,7 @@ object CoreServiceManager {
                         ipAddress = endpoint.ipAddress,
                     )
                     withContext(Dispatchers.Main.immediate) {
-                        if (isRunning()) {
+                        if (coreController.isRunning) {
                             MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_RESULT, fullResult, requestId)
                         }
                     }
