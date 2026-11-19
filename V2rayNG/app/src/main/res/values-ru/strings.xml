@@ -580,4 +580,6 @@
     <string name="sub_info_unlimited">Без ограничений</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">имя пользователя</string>
+    <string name="server_lab_password">пароль</string>
 </resources>
