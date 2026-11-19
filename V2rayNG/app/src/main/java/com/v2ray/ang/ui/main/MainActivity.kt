@@ -213,6 +213,7 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.HTTP.value -> Intent(this, ServerHttpActivity::class.java)
             EConfigType.TROJAN.value -> Intent(this, ServerTrojanActivity::class.java)
             EConfigType.WIREGUARD.value -> Intent(this, ServerWireguardActivity::class.java)
+            EConfigType.SSTP.value -> Intent(this, ServerSstpActivity::class.java)
             EConfigType.HYSTERIA2.value -> Intent(this, ServerHysteria2Activity::class.java)
             EConfigType.MASQUE.value -> Intent(this, ServerMasqueActivity::class.java)
             else -> Intent(this, ServerHttpActivity::class.java).apply {
