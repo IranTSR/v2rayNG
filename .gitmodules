@@ -4,3 +4,7 @@
 [submodule "hev-socks5-tunnel"]
 	path = hev-socks5-tunnel
 	url = https://github.com/heiher/hev-socks5-tunnel
+
+[submodule "third_party/Open-SSTP-Client"]
+	path = third_party/Open-SSTP-Client
+	url = https://github.com/kittoku/Open-SSTP-Client
