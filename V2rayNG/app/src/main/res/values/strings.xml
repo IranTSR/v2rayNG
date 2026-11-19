@@ -577,4 +577,6 @@
     <string name="sub_info_unlimited">Unlimited</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">username</string>
+    <string name="server_lab_password">password</string>
 </resources>
