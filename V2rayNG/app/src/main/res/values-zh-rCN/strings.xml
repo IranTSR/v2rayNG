@@ -574,4 +574,6 @@
     <string name="sub_info_unlimited">无限制</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">用户名</string>
+    <string name="server_lab_password">密码</string>
 </resources>
