@@ -574,4 +574,6 @@
     <string name="sub_info_unlimited">Không giới hạn</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">tên người dùng</string>
+    <string name="server_lab_password">mật khẩu</string>
 </resources>
