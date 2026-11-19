@@ -44,6 +44,7 @@ internal class Controller(private val bridge: SharedBridge) {
 
     internal fun launchJobMain() {
         bridge.handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            terminating.set(true)
             cleanup()
             bridge.service.notifyFailure(throwable.message ?: throwable.javaClass.simpleName)
         }
