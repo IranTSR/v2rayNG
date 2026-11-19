@@ -577,4 +577,6 @@
     <string name="sub_info_unlimited">Limitsiz</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">istifadəçi adı</string>
+    <string name="server_lab_password">şifrə</string>
 </resources>
