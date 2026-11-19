@@ -102,6 +102,17 @@ object CoreServiceManager {
         registerMessageReceiver(service, IntentFilter(AppConfig.BROADCAST_ACTION_SERVICE))
     }
 
+    fun unregisterExternalServiceReceiver(service: Service) {
+        setSstpRunning(false)
+        if (!isServiceReceiverRegistered) return
+        try {
+            service.unregisterReceiver(mMsgReceive)
+            isServiceReceiverRegistered = false
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to unregister SSTP receiver", e)
+        }
+    }
+
     private fun registerMessageReceiver(service: Service, filter: IntentFilter) {
         if (isServiceReceiverRegistered) return
         ContextCompat.registerReceiver(service, mMsgReceive, filter, Utils.receiverFlags())
