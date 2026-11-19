@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: sstp-validation-${{ github.ref }}
@@ -23,14 +23,24 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Fetch upstream master and report branch divergence
+      - name: Merge latest upstream master into feature branch
         shell: bash
         run: |
           git remote add upstream https://github.com/2dust/v2rayNG.git
           git fetch upstream master
-          echo "Branch divergence (upstream-only, branch-only):"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git merge-base --is-ancestor upstream/master HEAD; then
+            git merge --no-edit upstream/master
+            git submodule sync --recursive
+            git submodule update --init --recursive
+            git push origin HEAD:refs/heads/feature/sstp-support
+          else
+            echo "Feature branch already contains upstream master."
+          fi
+          echo "Branch divergence after synchronization:"
           git rev-list --left-right --count upstream/master...HEAD
-          echo "Agent instruction differences against upstream:"
+          echo "Instruction files differing from upstream:"
           git diff --name-status upstream/master...HEAD -- \
             ':(glob)**/AGENTS.md' ':(glob)**/CLAUDE.md' \
             ':(glob)**/GEMINI.md' .github/copilot-instructions.md
