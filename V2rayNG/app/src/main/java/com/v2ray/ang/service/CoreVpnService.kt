@@ -17,11 +17,15 @@ import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.contracts.ServiceControl
 import com.v2ray.ang.contracts.Tun2SocksControl
 import com.v2ray.ang.core.CoreServiceManager
+import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.handler.AppLocaleManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.SettingsManager
+import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.root.RootLanSharing
+import kittoku.osc.SstpEngine
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import java.lang.ref.SoftReference
@@ -33,6 +37,8 @@ class CoreVpnService : VpnService(), ServiceControl {
     private var isRunning = false
     private var tun2SocksService: Tun2SocksControl? = null
     private val isStartingLock = AtomicBoolean(false)
+    private var sstpEngine: SstpEngine? = null
+    private var isSstpStopping = false
 
     override fun onCreate() {
         super.onCreate()
@@ -55,6 +61,12 @@ class CoreVpnService : VpnService(), ServiceControl {
     override fun onDestroy() {
         super.onDestroy()
         LogUtil.i(AppConfig.TAG, "StartCore-VPN: Service destroyed")
+        if (sstpEngine != null) {
+            isSstpStopping = true
+            sstpEngine?.disconnect()
+            sstpEngine = null
+            CoreServiceManager.setSstpRunning(false)
+        }
 
         // Ensure VPN interface is properly closed when the service is destroyed without
         // going through stopAllService() (e.g. when killed unexpectedly). isRunning is
@@ -87,6 +99,17 @@ class CoreVpnService : VpnService(), ServiceControl {
             return START_NOT_STICKY
         }
         LogUtil.i(AppConfig.TAG, "StartCore-VPN: Service command received, systemVpnStart=$isSystemVpnStart")
+        val selectedGuid = MmkvManager.getSelectServer()
+        val selectedProfile = selectedGuid?.let(MmkvManager::decodeServerConfig)
+        if (selectedProfile?.configType == EConfigType.SSTP) {
+            if (!startSstpService(selectedProfile)) {
+                unlockStart()
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            return START_STICKY
+        }
+
         if (!setupVpnService()) {
             unlockStart()
             // Stop service if setup fails to avoid infinite restart loops (START_STICKY)
@@ -95,6 +118,68 @@ class CoreVpnService : VpnService(), ServiceControl {
         }
         startService()
         return START_STICKY
+    }
+
+
+    /**
+     * Runs the SSTP/PPP engine inside this existing VpnService. The engine creates the
+     * negotiated TUN interface; it never starts a second Android VpnService.
+     */
+    private fun startSstpService(profile: ProfileItem): Boolean {
+        val host = profile.server?.trim().orEmpty()
+        val port = profile.serverPort?.toIntOrNull() ?: 443
+        if (host.isBlank() || port !in 1..65535 || profile.username.isNullOrBlank() || profile.password.isNullOrBlank()) {
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, "SSTP requires a valid host, port, username and password")
+            return false
+        }
+        if (prepare(this) != null) {
+            MessageHelper.sendMsg2UI(this, AppConfig.MSG_STATE_START_FAILURE, "VPN permission is not granted")
+            return false
+        }
+
+        isSstpStopping = false
+        sstpEngine = SstpEngine(
+            vpnService = this,
+            hostname = host,
+            port = port,
+            username = profile.username.orEmpty(),
+            password = profile.password.orEmpty(),
+            listener = object : SstpEngine.Listener {
+                override fun onConnected() {
+                    if (isSstpStopping) return
+                    LogUtil.i(AppConfig.TAG, "SSTP: PPP tunnel established for profile")
+                    CoreServiceManager.setSstpRunning(true, profile)
+                    NotificationManager.showNotification(profile)
+                    MessageHelper.sendMsg2UI(this@CoreVpnService, AppConfig.MSG_STATE_START_SUCCESS, "")
+                }
+
+                override fun onDisconnected() {
+                    if (isSstpStopping) return
+                    isSstpStopping = true
+                    LogUtil.i(AppConfig.TAG, "SSTP: tunnel disconnected")
+                    CoreServiceManager.setSstpRunning(false)
+                    NotificationManager.cancelNotification()
+                    MessageHelper.sendMsg2UI(this@CoreVpnService, AppConfig.MSG_STATE_STOP_SUCCESS, "")
+                    sstpEngine = null
+                    unlockStart()
+                    stopSelf()
+                }
+
+                override fun onFailure(message: String) {
+                    if (isSstpStopping) return
+                    isSstpStopping = true
+                    LogUtil.e(AppConfig.TAG, "SSTP: connection failed: $message")
+                    CoreServiceManager.setSstpRunning(false)
+                    NotificationManager.cancelNotification()
+                    MessageHelper.sendMsg2UI(this@CoreVpnService, AppConfig.MSG_STATE_START_FAILURE, message)
+                    sstpEngine = null
+                    unlockStart()
+                    stopSelf()
+                }
+            }
+        )
+        sstpEngine?.connect()
+        return true
     }
 
     override fun getService(): Service {
@@ -324,6 +409,13 @@ class CoreVpnService : VpnService(), ServiceControl {
 //        saveVpnNetworkInfo(configName, info)
         unlockStart()
         isRunning = false
+
+        if (sstpEngine != null) {
+            isSstpStopping = true
+            sstpEngine?.disconnect()
+            sstpEngine = null
+            CoreServiceManager.setSstpRunning(false)
+        }
 
         tun2SocksService?.stopTun2Socks()
         tun2SocksService = null
