@@ -576,4 +576,6 @@
     <string name="sub_info_unlimited">সীমাহীন</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">ব্যবহারকারীর নাম</string>
+    <string name="server_lab_password">পাসওয়ার্ড</string>
 </resources>
