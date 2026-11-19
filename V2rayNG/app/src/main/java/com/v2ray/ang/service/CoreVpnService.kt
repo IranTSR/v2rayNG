@@ -158,7 +158,7 @@ class CoreVpnService : VpnService(), ServiceControl {
                     if (isSstpStopping) return
                     isSstpStopping = true
                     LogUtil.i(AppConfig.TAG, "SSTP: tunnel disconnected")
-                    CoreServiceManager.setSstpRunning(false)
+                    CoreServiceManager.unregisterExternalServiceReceiver(this@CoreVpnService)
                     NotificationManager.cancelNotification()
                     MessageHelper.sendMsg2UI(this@CoreVpnService, AppConfig.MSG_STATE_STOP_SUCCESS, "")
                     sstpEngine = null
@@ -170,7 +170,7 @@ class CoreVpnService : VpnService(), ServiceControl {
                     if (isSstpStopping) return
                     isSstpStopping = true
                     LogUtil.e(AppConfig.TAG, "SSTP: connection failed: $message")
-                    CoreServiceManager.setSstpRunning(false)
+                    CoreServiceManager.unregisterExternalServiceReceiver(this@CoreVpnService)
                     NotificationManager.cancelNotification()
                     MessageHelper.sendMsg2UI(this@CoreVpnService, AppConfig.MSG_STATE_START_FAILURE, message)
                     sstpEngine = null
