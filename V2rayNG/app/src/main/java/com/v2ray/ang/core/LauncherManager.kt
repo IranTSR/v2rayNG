@@ -9,6 +9,7 @@ import com.v2ray.ang.R
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.toastError
+import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.helper.MessageHelper
@@ -107,6 +108,10 @@ object LauncherManager {
         }
 
         val isRootMode = SettingsManager.isRootMode()
+        if (config.configType == EConfigType.SSTP && (isRootMode || !SettingsManager.isVpnMode())) {
+            LogUtil.e(AppConfig.TAG, "LauncherManager: SSTP requires VPN mode")
+            error(context.getString(R.string.toast_action_not_allowed))
+        }
         if (isRootMode && !RootManager.isRootAvailable()) {
             LogUtil.e(AppConfig.TAG, "LauncherManager: root mode requires root but none available")
             error(context.getString(R.string.toast_root_required))
