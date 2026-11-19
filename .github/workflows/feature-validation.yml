@@ -53,6 +53,13 @@ jobs:
           mkdir -p V2rayNG/app/libs
           cp -R libs/. V2rayNG/app/libs/
 
+      - name: Read AndroidLibXrayLite tag
+        id: xray-tag
+        shell: bash
+        run: |
+          cd AndroidLibXrayLite
+          echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
       - name: Download libv2ray matching the checked-out submodule tag
         uses: robinraju/release-downloader@v1.13
         with:
@@ -60,13 +67,6 @@ jobs:
           tag: ${{ steps.xray-tag.outputs.tag }}
           fileName: libv2ray.aar
           out-file-path: V2rayNG/app/libs/
-
-      - name: Read AndroidLibXrayLite tag
-        id: xray-tag
-        shell: bash
-        run: |
-          cd AndroidLibXrayLite
-          echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java
         uses: actions/setup-java@v4
