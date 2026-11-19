@@ -10,10 +10,13 @@ import com.v2ray.ang.dto.UrlContentRequest
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.dto.entities.SubscriptionItem
+import com.v2ray.ang.dto.entities.SubscriptionUsageInfo
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isNotNullEmpty
 import com.v2ray.ang.fmt.CustomFmt
+import com.v2ray.ang.fmt.CustomOutboundFmt
 import com.v2ray.ang.fmt.Hysteria2Fmt
+import com.v2ray.ang.fmt.MasqueFmt
 import com.v2ray.ang.fmt.ShadowsocksFmt
 import com.v2ray.ang.fmt.SocksFmt
 import com.v2ray.ang.fmt.TrojanFmt
@@ -26,6 +29,7 @@ import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.QRCodeDecoder
 import com.v2ray.ang.util.Utils
+import okhttp3.Headers
 import java.net.URI
 
 object AngConfigManager {
@@ -47,6 +51,7 @@ object AngConfigManager {
             EConfigType.VLESS.protocolScheme to VlessFmt::parse,
             EConfigType.WIREGUARD.protocolScheme to WireguardFmt::parse,
             EConfigType.HYSTERIA2.protocolScheme to Hysteria2Fmt::parse,
+            EConfigType.MASQUE.protocolScheme to MasqueFmt::parse,
             AppConfig.HY2 to Hysteria2Fmt::parse,
         )
     }
@@ -163,6 +168,7 @@ object AngConfigManager {
                 EConfigType.TROJAN -> TrojanFmt.toUri(config)
                 EConfigType.WIREGUARD -> WireguardFmt.toUri(config)
                 EConfigType.HYSTERIA2 -> Hysteria2Fmt.toUri(config)
+                EConfigType.MASQUE -> MasqueFmt.toUri(config)
                 else -> {}
             }
         } catch (e: Exception) {
@@ -369,6 +375,23 @@ object AngConfigManager {
                 LogUtil.e(AppConfig.TAG, "Failed to parse custom config server as single config", e)
             }
             return 0
+        } else if (!server.contains("outbounds") && server.contains("protocol")) {
+            try {
+                val (config, rawOutbound) = CustomOutboundFmt.parse(server)
+                config.subscriptionId = subid
+                config.description = generateDescription(config)
+                commitProfiles(
+                    configs = listOf(ParsedProfile(config, rawOutbound)),
+                    subid = subid,
+                    append = append,
+                )
+                return 1
+            } catch (e: ProfileStorageException) {
+                throw e
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Failed to parse custom outbound", e)
+            }
+            return 0
         } else if (server.startsWith("[Interface]") && server.contains("[Peer]")) {
             try {
                 val config = WireguardFmt.parseWireguardConfFile(server)
@@ -488,6 +511,17 @@ object AngConfigManager {
             val proxyUsername = SettingsManager.getSocksUsername()
             val proxyPassword = SettingsManager.getSocksPassword()
 
+            // Account info (traffic, expiry, support link) the panel sends in the response headers.
+            var usageInfo: SubscriptionUsageInfo? = null
+            val captureUsageInfo: (Headers) -> Unit = { headers ->
+                usageInfo = SubscriptionInfoParser.parse(
+                    userInfo = headers["Subscription-Userinfo"],
+                    profileTitle = headers["Profile-Title"],
+                    supportUrl = headers["Support-Url"],
+                    webPageUrl = headers["Profile-Web-Page-Url"],
+                )
+            }
+
             var configText = try {
                 val httpPort = SettingsManager.getHttpPort()
                 HttpUtil.getUrlContentWithUserAgent(
@@ -499,7 +533,8 @@ object AngConfigManager {
                         httpPort = httpPort,
                         proxyUsername = proxyUsername,
                         proxyPassword = proxyPassword
-                    )
+                    ),
+                    captureUsageInfo
                 )
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
@@ -512,7 +547,8 @@ object AngConfigManager {
                             url = url,
                             userAgent = userAgent,
                             requestHeaders = requestHeaders
-                        )
+                        ),
+                        captureUsageInfo
                     )
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "Update subscription: Failed to get URL content with user agent", e)
@@ -526,6 +562,8 @@ object AngConfigManager {
             val count = parseConfigViaSub(configText, it.guid, false)
             if (count > 0) {
                 it.subscription.lastUpdated = System.currentTimeMillis()
+                // Replaced on every successful update so the box disappears if the panel stops sending the headers.
+                it.subscription.usageInfo = usageInfo
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
                 LogUtil.i(AppConfig.TAG, "Subscription updated: ${it.subscription.remarks}, $count configs")
                 return SubscriptionUpdateResult(
