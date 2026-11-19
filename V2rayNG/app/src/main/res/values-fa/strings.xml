@@ -576,4 +576,6 @@
     <string name="sub_info_unlimited">نامحدود</string>
 
     <string name="menu_item_import_config_manually_sstp">SSTP</string>
+    <string name="server_lab_username">نام کاربری</string>
+    <string name="server_lab_password">رمز عبور</string>
 </resources>
