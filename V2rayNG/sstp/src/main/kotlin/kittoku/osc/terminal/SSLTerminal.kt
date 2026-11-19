@@ -36,6 +36,7 @@ internal class SSLTerminal(private val bridge: SharedBridge) {
         jobInitialize = bridge.service.scope.launch(bridge.handler) {
             try {
                 val raw = Socket()
+                raw.soTimeout = 15_000
                 rawSocket = raw
                 if (!bridge.vpnService.protect(raw)) {
                     error("Unable to protect SSTP transport socket from VPN routing")
