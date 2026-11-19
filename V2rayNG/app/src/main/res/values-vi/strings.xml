@@ -573,4 +573,5 @@
     <string name="sub_info_open_page">Mở trang thông tin đăng ký</string>
     <string name="sub_info_unlimited">Không giới hạn</string>
 
+    <string name="menu_item_import_config_manually_sstp">SSTP</string>
 </resources>
