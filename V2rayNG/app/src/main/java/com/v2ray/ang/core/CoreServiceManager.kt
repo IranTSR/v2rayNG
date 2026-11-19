@@ -49,6 +49,8 @@ object CoreServiceManager {
     private val coreController: CoreController = CoreNativeManager.newCoreController(CoreCallback())
     private val mMsgReceive = ReceiveMessageHandler()
     private var currentConfig: ProfileItem? = null
+    @Volatile private var sstpRunning = false
+    @Volatile private var sstpProfile: ProfileItem? = null
     private var processFinder: XrayProcessFinder? = null
     private var browserDialer: IDialerService? = null
     private var networkMonitor: NetworkMonitor? = null
@@ -75,13 +77,19 @@ object CoreServiceManager {
      * Checks if the V2Ray service is running.
      * @return True if the service is running, false otherwise.
      */
-    fun isRunning() = coreController.isRunning
+    fun isRunning() = coreController.isRunning || sstpRunning
+
+    /** Records the external SSTP tunnel state while keeping Xray daemon state authoritative. */
+    fun setSstpRunning(running: Boolean, profile: ProfileItem? = null) {
+        sstpProfile = if (running) profile else null
+        sstpRunning = running
+    }
 
     /**
      * Gets the name of the currently running server.
      * @return The name of the running server.
      */
-    fun getRunningServerName() = currentConfig?.remarks.orEmpty()
+    fun getRunningServerName() = currentConfig?.remarks ?: sstpProfile?.remarks.orEmpty()
 
     /**
      * Refer to the official documentation for [registerReceiver](https://developer.android.com/reference/androidx/core/content/ContextCompat#registerReceiver(android.content.Context,android.content.BroadcastReceiver,android.content.IntentFilter,int):
@@ -89,7 +97,7 @@ object CoreServiceManager {
      * Starts the V2Ray core service.
      */
     fun startCoreLoop(vpnInterface: ParcelFileDescriptor?): Boolean {
-        if (isRunning()) {
+        if (coreController.isRunning) {
             LogUtil.w(AppConfig.TAG, "StartCore-Manager: Core already running")
             return false
         }
@@ -197,7 +205,8 @@ object CoreServiceManager {
         networkMonitor = null
         currentVpnInterface = null
 
-        if (isRunning()) {
+        setSstpRunning(false)
+        if (coreController.isRunning) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     coreController.stopLoop()
@@ -255,7 +264,7 @@ object CoreServiceManager {
     private fun reloadCore(): Boolean {
         if (isReloading) return false
         val service = getService() ?: return false
-        if (!isRunning()) return false
+        if (!coreController.isRunning) return false
 
         return try {
             val tunFd = currentVpnInterface
