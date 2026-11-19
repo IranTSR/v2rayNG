@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "v2rayNG"
 include(":app")
+
+include(":sstp")
