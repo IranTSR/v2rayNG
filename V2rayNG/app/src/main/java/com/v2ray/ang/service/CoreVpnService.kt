@@ -65,7 +65,7 @@ class CoreVpnService : VpnService(), ServiceControl {
             isSstpStopping = true
             sstpEngine?.disconnect()
             sstpEngine = null
-            CoreServiceManager.setSstpRunning(false)
+            CoreServiceManager.unregisterExternalServiceReceiver(this)
         }
 
         // Ensure VPN interface is properly closed when the service is destroyed without
@@ -139,6 +139,7 @@ class CoreVpnService : VpnService(), ServiceControl {
 
         isSstpStopping = false
         CoreServiceManager.registerExternalServiceReceiver(this)
+        CoreServiceManager.setSstpRunning(true, profile)
         sstpEngine = SstpEngine(
             vpnService = this,
             hostname = host,
