@@ -61,6 +61,7 @@ object CoreServiceManager {
 
     /** Tun descriptor the core was started with, null in the proxy only and root run modes. */
     private var currentVpnInterface: ParcelFileDescriptor? = null
+    private var isServiceReceiverRegistered = false
 
     var serviceControl: SoftReference<ServiceControl>? = null
         set(value) {
@@ -96,6 +97,17 @@ object CoreServiceManager {
      * `registerReceiver(Context, BroadcastReceiver, IntentFilter, int)`.
      * Starts the V2Ray core service.
      */
+    /** Registers the service-control receiver for the externally hosted SSTP tunnel. */
+    fun registerExternalServiceReceiver(service: Service) {
+        registerMessageReceiver(service, IntentFilter(AppConfig.BROADCAST_ACTION_SERVICE))
+    }
+
+    private fun registerMessageReceiver(service: Service, filter: IntentFilter) {
+        if (isServiceReceiverRegistered) return
+        ContextCompat.registerReceiver(service, mMsgReceive, filter, Utils.receiverFlags())
+        isServiceReceiverRegistered = true
+    }
+
     fun startCoreLoop(vpnInterface: ParcelFileDescriptor?): Boolean {
         if (coreController.isRunning) {
             LogUtil.w(AppConfig.TAG, "StartCore-Manager: Core already running")
@@ -126,7 +138,7 @@ object CoreServiceManager {
         mFilter.addAction(Intent.ACTION_SCREEN_ON)
         mFilter.addAction(Intent.ACTION_SCREEN_OFF)
         mFilter.addAction(Intent.ACTION_USER_PRESENT)
-        ContextCompat.registerReceiver(service, mMsgReceive, mFilter, Utils.receiverFlags())
+        registerMessageReceiver(service, mFilter)
 
         currentVpnInterface = vpnInterface
         launchCore(service, vpnInterface)
@@ -226,10 +238,13 @@ object CoreServiceManager {
         MessageHelper.sendMsg2UI(service, AppConfig.MSG_STATE_STOP_SUCCESS, "")
         NotificationManager.cancelNotification()
 
-        try {
-            service.unregisterReceiver(mMsgReceive)
-        } catch (e: Exception) {
-            LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to unregister receiver", e)
+        if (isServiceReceiverRegistered) {
+            try {
+                service.unregisterReceiver(mMsgReceive)
+                isServiceReceiverRegistered = false
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "StartCore-Manager: Failed to unregister receiver", e)
+            }
         }
 
         return true
