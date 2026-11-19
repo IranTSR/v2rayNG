@@ -90,7 +90,7 @@ object CoreServiceManager {
      * Gets the name of the currently running server.
      * @return The name of the running server.
      */
-    fun getRunningServerName() = currentConfig?.remarks ?: sstpProfile?.remarks.orEmpty()
+    fun getRunningServerName() = if (sstpRunning) sstpProfile?.remarks.orEmpty() else currentConfig?.remarks.orEmpty()
 
     /**
      * Refer to the official documentation for [registerReceiver](https://developer.android.com/reference/androidx/core/content/ContextCompat#registerReceiver(android.content.Context,android.content.BroadcastReceiver,android.content.IntentFilter,int):
@@ -120,8 +120,8 @@ object CoreServiceManager {
     }
 
     fun startCoreLoop(vpnInterface: ParcelFileDescriptor?): Boolean {
-        if (coreController.isRunning) {
-            LogUtil.w(AppConfig.TAG, "StartCore-Manager: Core already running")
+        if (coreController.isRunning || sstpRunning) {
+            LogUtil.w(AppConfig.TAG, "StartCore-Manager: Core or SSTP tunnel already running")
             return false
         }
 
@@ -186,7 +186,7 @@ object CoreServiceManager {
         }
         coreController.startLoop(result.content, tunFd)
 
-        if (!isRunning()) {
+        if (!coreController.isRunning) {
             error("Core failed to start")
         }
 
