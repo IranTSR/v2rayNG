@@ -47,7 +47,8 @@ val copySstpProtocolSources = tasks.register<org.gradle.api.tasks.Copy>("copySst
             "kittoku/osc/extension/ByteBuffer.kt",
             "kittoku/osc/extension/Short.kt",
             "kittoku/osc/extension/String.kt",
-            "kittoku/osc/configuration.kt"
+            "kittoku/osc/configuration.kt",
+            "kittoku/osc/debug/exception.kt"
         )
         exclude("kittoku/osc/client/ppp/IpcpClient.kt")
     }
