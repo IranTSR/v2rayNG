@@ -13,20 +13,7 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDir("../../third_party/Open-SSTP-Client/app/src/main/java")
-            java.filter.include(
-                "kittoku/osc/client/**",
-                "kittoku/osc/cipher/**",
-                "kittoku/osc/io/**",
-                "kittoku/osc/unit/**",
-                "kittoku/osc/extension/Byte.kt",
-                "kittoku/osc/extension/ByteArray.kt",
-                "kittoku/osc/extension/ByteBuffer.kt",
-                "kittoku/osc/extension/Short.kt",
-                "kittoku/osc/extension/String.kt",
-                "kittoku/osc/configuration.kt"
-            )
-            java.filter.exclude("kittoku/osc/client/ppp/IpcpClient.kt")
+            java.srcDir(layout.buildDirectory.dir("generated/sstp/kotlin"))
         }
     }
 
@@ -46,4 +33,27 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
+}
+
+val copySstpProtocolSources = tasks.register<org.gradle.api.tasks.Copy>("copySstpProtocolSources") {
+    from("../../third_party/Open-SSTP-Client/app/src/main/java") {
+        include(
+            "kittoku/osc/client/**",
+            "kittoku/osc/cipher/**",
+            "kittoku/osc/io/**",
+            "kittoku/osc/unit/**",
+            "kittoku/osc/extension/Byte.kt",
+            "kittoku/osc/extension/ByteArray.kt",
+            "kittoku/osc/extension/ByteBuffer.kt",
+            "kittoku/osc/extension/Short.kt",
+            "kittoku/osc/extension/String.kt",
+            "kittoku/osc/configuration.kt"
+        )
+        exclude("kittoku/osc/client/ppp/IpcpClient.kt")
+    }
+    into(layout.buildDirectory.dir("generated/sstp/kotlin"))
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(copySstpProtocolSources)
 }
