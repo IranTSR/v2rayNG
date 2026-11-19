@@ -1,0 +1,88 @@
+name: Build SSTP APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        required: false
+        type: string
+  push:
+    branches:
+      - sstp-support
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+      - uses: android-actions/setup-android@v4
+        with:
+          log-accepted-android-sdk-licenses: false
+          cmdline-tools-version: '14742923'
+          packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+      - name: Install NDK
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --channel=0 --install "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> $GITHUB_ENV
+          sed -i '10i\
+          \
+              ndkVersion = "30.0.16248370"' ${{ github.workspace }}/V2rayNG/app/build.gradle.kts
+      - name: Build libhevtun
+        run: |
+          bash compile-hevtun.sh
+          cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: Build sstp-socks
+        run: |
+          cd ${{ github.workspace }}/sstp-socks && go mod tidy
+          mkdir -p ${{ github.workspace }}/V2rayNG/app/libs/{arm64-v8a,armeabi-v7a,x86,x86_64}
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ${{ github.workspace }}/V2rayNG/app/libs/arm64-v8a/libsstpsocks.so .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o ${{ github.workspace }}/V2rayNG/app/libs/armeabi-v7a/libsstpsocks.so .
+          CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -ldflags="-s -w" -o ${{ github.workspace }}/V2rayNG/app/libs/x86/libsstpsocks.so .
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ${{ github.workspace }}/V2rayNG/app/libs/x86_64/libsstpsocks.so .
+      - name: Download libv2ray
+        run: |
+          TAG=$(git -C AndroidLibXrayLite describe --tags --abbrev=0)
+          curl -L -o V2rayNG/app/libs/libv2ray.aar "https://github.com/2dust/AndroidLibXrayLite/releases/download/${TAG}/libv2ray.aar"
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: timheuer/base64-to-file@v2.0.0
+        id: android_keystore
+        with:
+          fileName: "android_keystore.jks"
+          encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
+      - name: Build APK
+        run: |
+          cd ${{ github.workspace }}/V2rayNG
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          chmod 755 gradlew
+          ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: apks
+          path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: apks
+          path: release-files
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          file: release-files/*
+          tag: ${{ inputs.release_tag }}
+          file_glob: true
+          prerelease: true
